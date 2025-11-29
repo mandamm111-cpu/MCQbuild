@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MCQ Hub — Builder & Player (single file)</title>
+<style>
+:root{
+  --bg:#041423; --card:#071a2a; --muted:#9fb3c8; --accent:#1fb28f; --accent2:#3ea0ff;
+  --text:#eaf4ff; --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#021426 0%,#071227 100%);color:var(--text)}
+.app{max-width:980px;margin:18px auto;padding:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;flex-direction:column}
+.brand h1{margin:0;font-size:20px}
+.muted{color:var(--muted);font-size:13px}
+.nav{display:flex;gap:8px}
+.btn{background:linear-gradient(90deg,var(--accent2),var(--accent));color:#021;padding:10px 12px;border-radius:10px;border:0;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;margin-top:14px;box-shadow:0 8px 30px rgba(2,6,23,.6)}
+.grid{display:flex;gap:10px;flex-wrap:wrap}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.small{padding:8px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+.section{display:none}
+.section.active{display:block}
+.controls{display:flex;gap:8px;align-items:center}
+.form-grid{display:grid;gap:10px}
+textarea,input,select,button{font-family:inherit}
+textarea, input[type="text"], input[type="file"], select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)}
+textarea{min-height:70px}
+.cols{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:900px){.cols{grid-template-columns:repeat(3,1fr)}}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.qcard{background:var(--glass);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px}
+.qmeta{display:flex;justify-content:space-between;align-items:center}
+.qtext{font-size:15px}
+.qimage img{max-width:100%;border-radius:8px;display:block;margin-top:8px}
+.choices{display:grid;gap:8px;margin-top:12px}
+.choice-btn{padding:12px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:var(--text);text-align:left;font-size:16px;cursor:pointer}
+.choice-btn.correct{background:linear-gradient(90deg,#0f7f4c,#24b77b);color:#fff;box-shadow:0 6px 18px rgba(23,139,80,0.12)}
+.choice-btn.wrong{background:linear-gradient(90deg,#9a3b3b,#d06969);color:#fff;box-shadow:0 6px 18px rgba(159,67,67,0.12)}
+.explain{margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);color:var(--muted)}
+.progress-bar{height:8px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
+.footer{margin-top:14px;text-align:center;color:var(--muted);font-size:13px}
+.sep{height:1px;background:rgba(255,255,255,0.02);margin:12px 0;border-radius:2px}
+.filearea{display:flex;gap:8px;align-items:center}
+kbd{background:rgba(255,255,255,0.03);padding:4px 6px;border-radius:6px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <h1>MCQ Hub</h1>
+      <div class="muted">Create • Save • Play — on your phone</div>
+    </div>
+
+    <div class="nav">
+      <button class="btn" id="navHome">Home</button>
+      <button class="btn ghost" id="navBuilder">Builder</button>
+      <button class="btn ghost" id="navPlayer">Player</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <section id="home" class="section active">
+    <div class="card">
+      <h2>Welcome</h2>
+      <p class="muted">Make quizzes, save locally, export JSON/CSV, and play anytime.</p>
+
+      <div class="grid" style="margin-top:12px">
+        <button class="btn" id="goCreate">➕ Create / Edit Quiz</button>
+        <button class="btn ghost" id="goPlay">▶ Play Last Quiz</button>
+        <label class="btn ghost" id="importFileLabel">📥 Import JSON</label>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button class="small" id="loadDemo">Load Demo</button>
+        <button class="small" id="clearAll">Clear Saved Quiz</button>
+      </div>
+
+      <div style="margin-top:12px" class="muted" id="statusText">Status: checking...</div>
+
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+      <div class="sep"></div>
+
+      <div>
+        <label class="muted">Quick import JSON (paste below then click Apply):</label>
+        <textarea id="pasteJson" placeholder='Paste JSON here ({"questions":[...]})'></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="small" id="applyPaste">Apply JSON</button>
+          <button class="small" id="sampleCSV">Show CSV format</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILDER -->
+  <section id="builder" class="section">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <a class="btn ghost" id="backHome">← Home</a>
+          <h2 style="display:inline-block;margin-left:10px">Create Quiz</h2>
+        </div>
+        <div class="muted">Saved locally (localStorage)</div>
+      </div>
+
+      <div class="form-grid" style="margin-top:12px">
+        <label>Question
+          <textarea id="q_text" placeholder="Type the question..."></textarea>
+        </label>
+
+        <label>Image (optional)
+          <input id="q_image" type="file" accept="image/*">
+        </label>
+
+        <div class="cols">
+          <label>Option A <input id="optA" placeholder="Choice A"></label>
+          <label>Option B <input id="optB" placeholder="Choice B"></label>
+          <label>Option C <input id="optC" placeholder="Choice C"></label>
+          <label>Option D <input id="optD" placeholder="Choice D"></label>
+          <label>Option E <input id="optE" placeholder="Choice E"></label>
+        </div>
+
+        <label>Correct answer
+          <select id="optCorrect"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+        </label>
+
+        <label>Explanation (optional)
+          <textarea id="q_explain" placeholder="Short explanation to show after answering..."></textarea>
+        </label>
+
+        <div class="row">
+          <button class="btn" id="addQ">+ Add Question</button>
+          <button class="btn ghost" id="startPlay">▶ Play This Quiz</button>
+        </div>
+
+        <div class="row">
+          <button class="small" id="saveJSON">Export JSON</button>
+          <button class="small" id="exportCSV">Export CSV</button>
+          <button class="small" id="clearList">Clear All Questions</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3>Questions (<span id="count">0</span>)</h3>
+      <div id="listArea" class="list"></div>
+    </div>
+  </section>
+
+  <!-- PLAYER -->
+  <section id="player" class="section">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <a class="btn ghost" id="toBuilder">← Builder</a>
+          <h2 style="display:inline-block;margin-left:10px">Play Quiz</h2>
+        </div>
+        <div class="muted">Answer with touch or keys (A–E)</div>
+      </div>
+
+      <div class="row between" style="margin-top:10px">
+        <div class="muted" id="progressText">0 / 0</div>
+        <div class="muted">Score: <span id="scoreText">0</span></div>
+      </div>
+
+      <div id="qImageWrap" style="display:none;margin-top:10px" class="qimage"><img id="qImage" alt="question image"></div>
+
+      <h2 id="qText" class="qtext" style="margin-top:12px">No questions loaded.</h2>
+
+      <div id="choices" class="choices"></div>
+
+      <div id="explain" class="explain" style="display:none"></div>
+
+      <div class="row" style="margin-top:12px">
+        <label class="tog"><input id="autoNext" type="checkbox"> Auto-next</label>
+        <label class="tog">Delay <input id="delay" type="range" min="200" max="2500" value="900"></label>
+        <button class="btn ghost" id="nextBtn">Next ▶</button>
+        <button class="btn ghost" id="restartBtn">Restart</button>
+      </div>
+
+      <div class="progress-bar" style="margin-top:12px"><div id="progressFill" class="progress-fill"></div></div>
+    </div>
+  </section>
+
+  <div class="footer">Tip: Export JSON to share quizzes (JSON keeps images). CSV doesn't include images.</div>
+</div>
+
+<script>
+/* ---------- Single-file app.js (merged) ---------- */
+const STORAGE_KEY = 'manda_mcq_quiz';
+const PROG_KEY = 'manda_mcq_progress';
+
+/* Utilities */
+function uid(len=8){ return Math.random().toString(36).slice(2,2+len) }
+function saveQuiz(obj){
+  const payload = Array.isArray(obj) ? {questions: obj} : (obj.questions ? obj : {questions: obj});
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  updateStatus();
+}
+function loadQuiz(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"questions":[]}'); }catch(e){ return {questions:[]} } }
+function saveProgress(payload){
+  try{ localStorage.setItem(PROG_KEY, JSON.stringify(payload)); }catch(e){}
+}
+function loadProgress(){ try{ return JSON.parse(localStorage.getItem(PROG_KEY) || 'null'); }catch(e){ return null } }
+
+/* Navigation */
+const elHome = document.getElementById('home'), elBuilder = document.getElementById('builder'), elPlayer = document.getElementById('player');
+function showSection(id){
+  elHome.classList.remove('active'); elBuilder.classList.remove('active'); elPlayer.classList.remove('active');
+  if(id==='home') elHome.classList.add('active');
+  if(id==='builder') elBuilder.classList.add('active');
+  if(id==='player') elPlayer.classList.add('active');
+}
+document.getElementById('navHome').onclick = ()=> showSection('home');
+document.getElementById('navBuilder').onclick = ()=> showSection('builder');
+document.getElementById('navPlayer').onclick = ()=> showSection('player');
+document.getElementById('goCreate').onclick = ()=> { showSection('builder'); scrollToTop(); }
+document.getElementById('goPlay').onclick = ()=> { showSection('player'); initPlayer(); }
+document.getElementById('backHome').onclick = ()=> showSection('home');
+document.getElementById('toBuilder').onclick = ()=> showSection('builder');
+
+/* Home controls */
+const statusText = document.getElementById('statusText');
+function updateStatus(){ const s = loadQuiz(); statusText.textContent = s.questions && s.questions.length ? `Saved quiz: ${s.questions.length} question(s)` : 'No quiz saved'; }
+document.getElementById('clearAll').onclick = ()=> { if(confirm('Clear saved quiz?')){ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(PROG_KEY); updateStatus(); alert('Cleared'); } };
+document.getElementById('loadDemo').onclick = ()=> { saveQuiz(demoQuiz()); alert('Demo quiz loaded'); updateStatus(); }
+document.getElementById('importFileLabel').onclick = ()=> document.getElementById('fileInput').click();
+
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> {
+    try{
+      const parsed = JSON.parse(r.result);
+      if(parsed.questions || Array.isArray(parsed)) { saveQuiz(parsed); alert('Quiz imported'); showSection('builder'); initBuilder(); }
+      else alert('Invalid JSON structure');
+    }catch(err){ alert('Invalid JSON file'); }
+  }; r.readAsText(f);
+});
+document.getElementById('applyPaste').onclick = ()=>{
+  const txt = document.getElementById('pasteJson').value.trim();
+  if(!txt){ alert('Paste some JSON'); return; }
+  try{
+    const parsed = JSON.parse(txt);
+    if(parsed.questions || Array.isArray(parsed)) { saveQuiz(parsed); alert('Applied JSON'); showSection('builder'); initBuilder(); }
+    else alert('JSON must be an array or {questions:[...]}');
+  }catch(e){ alert('Invalid JSON'); }
+};
+document.getElementById('sampleCSV').onclick = ()=>{
+  alert('CSV format (one line per question):\nQuestion | optionA | optionB | optionC | optionD | optionE | Answer(A/B/C/D/E) | Explanation(optional)\nNote: CSV export does not include images.');
+}
+
+/* Demo quiz */
+function demoQuiz(){
+  return {questions:[
+    {id: uid(), question:'What is 2 + 3?', options:['4','5','6','7','8'], answer:'B', explanation:'2 + 3 = 5', image:null},
+    {id: uid(), question:'Which organelle makes ATP?', options:['Nucleus','Mitochondria','Chloroplast','Golgi','Ribosome'], answer:'B', explanation:'Mitochondria produce ATP', image:null},
+    {id: uid(), question:'Capital of Japan?', options:['Seoul','Beijing','Tokyo','Bangkok','Hanoi'], answer:'C', explanation:'Tokyo is capital of Japan', image:null}
+  ]};
+}
+
+/* ---------- BUILDER ---------- */
+function initBuilder(){
+  // elements
+  const q_text = document.getElementById('q_text');
+  const q_image = document.getElementById('q_image');
+  const optA = document.getElementById('optA');
+  const optB = document.getElementById('optB');
+  const optC = document.getElementById('optC');
+  const optD = document.getElementById('optD');
+  const optE = document.getElementById('optE');
+  const optCorrect = document.getElementById('optCorrect');
+  const q_explain = document.getElementById('q_explain');
+  const addQ = document.getElementById('addQ');
+  const listArea = document.getElementById('listArea');
+  const countEl = document.getElementById('count');
+
+  let quiz = loadQuiz();
+  if(!quiz.questions) quiz = {questions: []};
+
+  function renderList(){
+    listArea.innerHTML = '';
+    quiz.questions.forEach((qq, idx)=>{
+      const div = document.createElement('div'); div.className='qcard';
+      const meta = document.createElement('div'); meta.className='qmeta';
+      meta.innerHTML = `<div><strong>#${idx+1}</strong> ${escapeHtml(qq.question).slice(0,120)}</div>
+                        <div><button class="small" data-id="${qq.id}" data-action="del">Delete</button>
+                        <button class="small" data-id="${qq.id}" data-action="edit">Edit</button></div>`;
+      div.appendChild(meta);
+
+      if(qq.image){
+        const imgWrap = document.createElement('div'); imgWrap.className='qimage';
+        imgWrap.innerHTML = `<img src="${qq.image}" />`;
+        div.appendChild(imgWrap);
+      }
+
+      const qtxt = document.createElement('div'); qtxt.className='qtext'; qtxt.textContent = qq.question;
+      div.appendChild(qtxt);
+
+      const optlist = document.createElement('div'); optlist.className='muted';
+      optlist.innerHTML = `A: ${qq.options[0]||''} • B: ${qq.options[1]||''} • C: ${qq.options[2]||''} • D: ${qq.options[3]||''} • E: ${qq.options[4]||''} <br><em>Answer: ${qq.answer}</em>`;
+      div.appendChild(optlist);
+
+      listArea.appendChild(div);
+    });
+    countEl.textContent = quiz.questions.length;
+    saveQuiz(quiz);
+    updateStatus();
+  }
+
+  function resetForm(){
+    q_text.value=''; optA.value=''; optB.value=''; optC.value=''; optD.value=''; optE.value=''; optCorrect.value='A'; q_explain.value=''; q_image.value='';
+  }
+
+  addQ.onclick = ()=>{
+    if(!q_text.value.trim()){ alert('Fill question'); return; }
+    const choices = [optA.value.trim(), optB.value.trim(), optC.value.trim(), optD.value.trim(), optE.value.trim()];
+    // read image if provided
+    if(q_image.files && q_image.files[0]){
+      const fr = new FileReader();
+      fr.onload = ()=>{
+        const item = { id: uid(), question: q_text.value.trim(), options: choices, answer: optCorrect.value, explanation: q_explain.value.trim(), image: fr.result };
+        quiz.questions.push(item); renderList(); resetForm();
+      };
+      fr.readAsDataURL(q_image.files[0]);
+    } else {
+      const item = { id: uid(), question: q_text.value.trim(), options: choices, answer: optCorrect.value, explanation: q_explain.value.trim(), image: null };
+      quiz.questions.push(item); renderList(); resetForm();
+    }
+  };
+
+  listArea.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    const act = btn.dataset.action;
+    if(act === 'del'){
+      if(confirm('Delete this question?')){ quiz.questions = quiz.questions.filter(q=> q.id !== id); renderList(); }
+    } else if(act === 'edit'){
+      const q = quiz.questions.find(x=> x.id === id);
+      if(!q) return;
+      q_text.value = q.question;
+      optA.value = q.options[0] || '';
+      optB.value = q.options[1] || '';
+      optC.value = q.options[2] || '';
+      optD.value = q.options[3] || '';
+      optE.value = q.options[4] || '';
+      optCorrect.value = q.answer || 'A';
+      q_explain.value = q.explanation || '';
+      // remove edited one
+      quiz.questions = quiz.questions.filter(x=> x.id !== id);
+      renderList();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+  });
+
+  document.getElementById('startPlay').onclick = ()=>{
+    saveQuiz(quiz); showSection('player'); initPlayer();
+  };
+
+  document.getElementById('saveJSON').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(quiz, null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'mcq_quiz.json'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  document.getElementById('exportCSV').onclick = ()=>{
+    // CSV without images
+    if(!quiz.questions.length){ alert('No questions to export'); return; }
+    const lines = quiz.questions.map(q=>{
+      const row = [q.question, ...(q.options||[]).slice(0,5), q.answer, q.explanation || ''];
+      return row.map(c=> (''+c).replace(/\|/g,' ')).join(' | ');
+    });
+    const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'mcq_export.txt'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  document.getElementById('clearList').onclick = ()=>{
+    if(confirm('Clear all questions?')) { quiz.questions = []; renderList(); }
+  };
+
+  // if file input on page (from home) was used to import, it will already be saved by home handler
+  renderList();
+}
+
+/* ---------- PLAYER ---------- */
+function initPlayer(){
+  const data = loadQuiz();
+  let questions = (data && data.questions) ? data.questions.slice() : [];
+  let current = 0, score = 0, answered = 0;
+  const qText = document.getElementById('qText');
+  const qImageWrap = document.getElementById('qImageWrap');
+  const qImage = document.getElementById('qImage');
+  const choicesEl = document.getElementById('choices');
+  const explainEl = document.getElementById('explain');
+  const progressText = document.getElementById('progressText');
+  const scoreText = document.getElementById('scoreText');
+  const autoNext = document.getElementById('autoNext');
+  const delayEl = document.getElementById('delay');
+  const nextBtn = document.getElementById('nextBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const progressFill = document.getElementById('progressFill');
+
+  let autoTimer = null;
+
+  function shuffleArray(a){
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  }
+
+  function render(){
+    choicesEl.innerHTML = ''; explainEl.style.display='none'; explainEl.innerHTML='';
+    if(!questions.length){ qText.textContent = 'No questions available. Go to Builder to create.'; progressText.textContent='0 / 0'; scoreText.textContent='0'; progressFill.style.width = '0%'; return; }
+    const q = questions[current];
+    progressText.textContent = `${current+1} / ${questions.length}`;
+    scoreText.textContent = score;
+    qText.textContent = q.question;
+    if(q.image){ qImage.src = q.image; qImageWrap.style.display='block'; } else { qImage.src=''; qImageWrap.style.display='none'; }
+    // build options
+    const opts = q.options.map((t,i)=> ({letter:['A','B','C','D','E'][i], text:t}));
+    // no shuffle by default; if you want, uncomment shuffleArray(opts);
+    opts.forEach(o=>{
+      const btn = document.createElement('button'); btn.className='choice-btn'; btn.innerHTML = `<strong>${o.letter}.</strong> ${o.text}`; btn.dataset.choice = o.letter;
+      btn.onclick = ()=> selectChoice(btn, o.letter);
+      choicesEl.appendChild(btn);
+    });
+    // update progress bar
+    progressFill.style.width = `${Math.round(((current)/questions.length)*100)}%`;
+  }
+
+  function selectChoice(btn, letter){
+    if(!questions.length) return;
+    const q = questions[current];
+    Array.from(choicesEl.children).forEach(b=> b.disabled = true);
+    if(letter === q.answer){
+      btn.classList.add('correct'); score++; answered++;
+    } else {
+      btn.classList.add('wrong'); answered++;
+      const corr = Array.from(choicesEl.children).find(b => b.dataset.choice === q.answer);
+      if(corr) corr.classList.add('correct');
+    }
+    if(q.explanation){ explainEl.style.display='block'; explainEl.innerHTML = `<strong>Jawaban: ${q.answer}</strong><div style="margin-top:8px;color:var(--muted)">${escapeHtml(q.explanation)}</div>`; }
+    scoreText.textContent = score;
+    // auto next
+    if(autoNext.checked){
+      clearTimeout(autoTimer);
+      autoTimer = setTimeout(()=> goNext(), Number(delayEl.value) || 800);
+    }
+    // save progress
+    saveProgress({questions, meta:{current, score, answered}});
+  }
+
+  function goNext(){
+    if(!questions.length) return;
+    current++;
+    if(current >= questions.length){
+      qText.textContent = 'Done! 🎉'; choicesEl.innerHTML=''; explainEl.style.display='block'; explainEl.innerHTML=`<div>Score: ${score} / ${answered}</div>`;
+      progressText.textContent = `${questions.length} / ${questions.length}`;
+      progressFill.style.width = '100%';
+      saveProgress(null);
+      return;
+    }
+    saveProgress({questions, meta:{current, score, answered}});
+    render();
+  }
+
+  nextBtn.onclick = ()=> goNext();
+  restartBtn.onclick = ()=> { if(confirm('Restart quiz?')){ current = 0; score = 0; answered = 0; render(); saveProgress({questions, meta:{current:0,score:0,answered:0}}); } };
+
+  // keyboard support
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key.toUpperCase();
+    if(['A','B','C','D','E'].includes(k)){
+      const btn = Array.from(choicesEl.children).find(b => b.dataset.choice === k);
+      if(btn && !btn.disabled) btn.click();
+    } else if(k === 'N' || k === ' '){
+      e.preventDefault(); goNext();
+    }
+  });
+
+  // load saved progress if exists
+  const saved = loadProgress();
+  if(saved && saved.questions && saved.questions.length){
+    questions = saved.questions;
+    if(saved.meta && saved.meta.current != null){
+      // resume
+      // guard current value
+      // if quiz length changed, clamp
+      const clamped = Math.min(saved.meta.current, (questions.length-1));
+      // restore
+      // eslint-disable-next-line
+      // not restoring score/answered strictly since user could resume fresh; we keep simple
+      // but restore numeric if exists
+      // continue from saved position
+    }
+  } else {
+    // load base quiz
+    const base = loadQuiz();
+    questions = base.questions || [];
+  }
+
+  render();
+}
+
+/* ---------- Helpers & init ---------- */
+function escapeHtml(str){ return (''+str).replace(/[&<>"']/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* Init builder when showing page */
+document.getElementById('navBuilder').addEventListener('click', ()=> { showSection('builder'); initBuilder(); });
+document.getElementById('navPlayer').addEventListener('click', ()=> { showSection('player'); initPlayer(); });
+document.getElementById('goCreate').addEventListener('click', ()=> { showSection('builder'); initBuilder(); });
+document.getElementById('goPlay').addEventListener('click', ()=> { showSection('player'); initPlayer(); });
+
+/* On load */
+updateStatus();
+
+/* When index loaded and user goes to builder auto-run */
+if(location.hash === '#builder'){ showSection('builder'); initBuilder(); }
+if(location.hash === '#player'){ showSection('player'); initPlayer(); }
+
+/* ensure builder ready on first open */
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ updateStatus(); } });
+</script>
+</body>
+</html>
